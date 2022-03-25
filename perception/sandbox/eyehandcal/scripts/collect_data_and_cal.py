@@ -60,9 +60,9 @@ def realsense_images(max_pixel_diff=100):
 
 def sample_poses(overhead_cameras=True):
     hand_mount_yaw_offset = -pi/4
-    for x in np.linspace(0.3, 0.5, 2):
-        for y in np.linspace(-0.2, 0.2, 2):
-            for z in np.linspace(0.2, 0.4, 2):
+    for x in np.linspace(0.3, 0.5, 3):
+        for y in np.linspace(-0.2, 0.2, 3):
+            for z in np.linspace(0.2, 0.4, 3):
                 for yaw in np.linspace(-pi/4, pi/4, 3):
                     if overhead_cameras:
                         pos_sampled = torch.Tensor([x, y, z+.1])
@@ -82,24 +82,31 @@ def robot_poses(ip_address, pose_generator):
 
     # Get reference state
     robot.go_home()
+    time_to_go = 5
     for i, (pos_sampled, ori_sampled) in enumerate(pose_generator):
-        print( f"Moving to pose ({i}): pos={pos_sampled}, quat={ori_sampled.as_quat()}")
-        state_log = robot.move_to_ee_pose(
-            position=pos_sampled,
-            orientation=ori_sampled.as_quat(),
-            time_to_go = 3
-        )
         while True:
-            pos0, quat0 = robot.get_ee_pose()
-            time.sleep(1)
-            pos1, quat1 = robot.get_ee_pose()
-            diffpos = (pos0-pos1).norm()
-            if diffpos < 0.01:
-                break
-            print(f'robot moving diffpos={diffpos}')
+            print( f"Moving to pose ({i}): pos={pos_sampled}, quat={ori_sampled.as_quat()}")
+            state_log = robot.move_to_ee_pose(
+                position=pos_sampled,
+                orientation=ori_sampled.as_quat(),
+                time_to_go = time_to_go
+            )
+            print(f"Length of state_log: {len(state_log)}")
+            if len(state_log) != time_to_go * robot.hz:
+                print(f"State log incorrect length. Trying again...")
+            else:
+                while True:
+                    pos0, quat0 = robot.get_ee_pose()
+                    time.sleep(1)
+                    pos1, quat1 = robot.get_ee_pose()
+                    diffpos = (pos0-pos1).norm()
+                    if diffpos < 0.01:
+                        break
+                    print(f'robot moving diffpos={diffpos}')
 
-        print(f"Current pose  pos={pos0}, quat={quat0}")
-        yield pos1, quat1
+                print(f"Current pose  pos={pos0}, quat={quat0}")
+                yield pos1, quat1
+                break
 
 
 # helper function

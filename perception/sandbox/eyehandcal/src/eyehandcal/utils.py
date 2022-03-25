@@ -23,7 +23,7 @@ def detect_corners(data, target_idx=9):
             result=cv2.aruco.detectMarkers(img, dictionary=aruco_dict, parameters=aruco_param)
             corners, idx, rej = result
             if idx is not None and target_idx in idx:
-                corner_i = idx.squeeze().tolist().index(target_idx)
+                corner_i = idx.squeeze(axis=1).tolist().index(target_idx)
                 target_corner=corners[corner_i][0,0,:].tolist()
                 d['corners'].append(target_corner)
             else:
